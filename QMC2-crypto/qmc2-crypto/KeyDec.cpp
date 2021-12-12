@@ -3,6 +3,7 @@
 #include <util/tc_base64.h>
 #include <util/tc_tea.h>
 
+#include <cstdio>
 #include <cmath>
 #include <vector>
 #include <cassert>
@@ -10,16 +11,24 @@
 using tars::TC_Base64;
 using tars::TC_Tea;
 
+void SimpleMakeKey(uint8_t seed, size_t len, uint8_t* buf) {
+	for (int i = 0; len > i; ++i) {
+		buf[i] = (uint8_t)(fabs(tan((float)seed + (double)i * 0.1)) * 100.0);
+	}
+}
+
 KeyDec::~KeyDec()
 {
+	Uninit();
+}
+
+void KeyDec::Uninit() {
 	if (key) {
 		delete[] key;
 		key = nullptr;
 	}
 
-	if (key_len) {
-		key_len = 0;
-	}
+	key_len = 0;
 }
 
 void KeyDec::GetKey(uint8_t*& key_out, size_t& key_len_out)
@@ -34,18 +43,11 @@ void KeyDec::GetKey(uint8_t*& key_out, size_t& key_len_out)
 	}
 }
 
-void SimpleMakeKey(uint8_t seed, size_t len, uint8_t* buf) {
-	for (int i = 0; len > i; ++i) {
-		buf[i] = (uint8_t)(fabs(tan((float)seed + (double)i * 0.1)) * 100.0);
-	}
-}
-
-void KeyDec::SetKey(const char* key, const size_t key_size)
+void KeyDec::SetKey(const char* ekey, const size_t key_size)
 {
-	TC_Base64 b64;
-	TC_Tea tea;
+	Uninit();
 	size_t decode_len = key_size / 4 * 3 + 4;
-	// should be 0x210
+
 	std::vector<uint8_t> ekey_decoded;
 	ekey_decoded.resize(decode_len);
 
@@ -63,26 +65,29 @@ void KeyDec::SetKey(const char* key, const size_t key_size)
 	assert(simple_key_buf[7] == 0x0b);
 #endif
 
-	decode_len = b64.decode(key, key_size, ekey_decoded.data());
+	TC_Base64 b64;
+	decode_len = b64.decode(ekey, key_size, ekey_decoded.data());
 
-	uint8_t tea_key[16];
+	if (decode_len != 0x210) {
+		fprintf(stderr, "ERROR: decoded key size is not 0x210, got %llx instead.\n", decode_len);
+		return;
+	}
+
+	uint8_t tea_key[16] = {};
 	for (int i = 0; i < 16; i += 2) {
 		tea_key[i + 0] = simple_key_buf[i / 2];
 		tea_key[i + 1] = ekey_decoded[i / 2];
 	}
 
-	if (this->key) {
-		delete[] this->key;
-		this->key = nullptr;
-	}
+	key = new uint8_t[decode_len * 2]();
 
-	this->key = new uint8_t[decode_len * 2]();
+	// Copy first 8 bytes
+	memcpy(key, ekey_decoded.data(), 8u);
 
-	// 拷贝前 8 个字节
-	memcpy(this->key, ekey_decoded.data(), 8u);
-
+	// Copy the rest
 	std::vector<char> decrypted_buf;
+	TC_Tea tea;
 	tea.decrypt(reinterpret_cast<const char*>(tea_key), reinterpret_cast<const char*>(ekey_decoded.data()) + 8, decode_len - 8, decrypted_buf);
 	key_len = decrypted_buf.size() + 8;
-	memcpy(&this->key[8], decrypted_buf.data(), decrypted_buf.size());
+	memcpy(&key[8], decrypted_buf.data(), decrypted_buf.size());
 }

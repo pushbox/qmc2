@@ -45,6 +45,7 @@ void StreamCencrypt::Uninit()
 
 	// reset sbox
 	this->N = 0;
+
 	if (S) {
 		delete[] S;
 		S = nullptr;
@@ -71,8 +72,8 @@ void StreamCencrypt::ProcessByRC4(size_t offset, uint8_t* buf, size_t size)
 		offset += len_segment;
 	}
 
-	uint8_t* S = new uint8_t[N];
-	memset(S, 0, N);
+	// FIXME: Move this as a private member?
+	uint8_t* S = new uint8_t[N]();
 
 	// Align segment
 	if (offset % SEGMENT_SIZE != 0) {
@@ -197,6 +198,7 @@ inline uint8_t rotate(uint8_t value, int bits) {
 	return uint8_t(left | right);
 }
 
+// Untested, this might be wrong.
 uint8_t StreamCencrypt::mapL(uint64_t offset)
 {
 	if (offset > 0x7FFF)

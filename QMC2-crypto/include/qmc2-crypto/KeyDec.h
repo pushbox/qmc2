@@ -13,4 +13,6 @@ public:
 private:
 	uint8_t* key = nullptr;
 	size_t key_len = 0;
+
+	void Uninit();
 };
