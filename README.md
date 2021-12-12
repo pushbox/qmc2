@@ -14,6 +14,12 @@ make
 
 二进制文件可以在 `build/QMC2-decoder/QMC2-decoder` 找到 (Windows 下加上 .exe)。
 
+## 可执行文件下载
+
+Windows 版本需要最新的 VS2022 运行时。
+
+二进制文件可以在 [Release][latest_release] 区找到。
+
 ## 使用方式
 
 ```sh
@@ -28,3 +34,4 @@ QMC2-decoder encrypted_file.mflac decrypted.flac
 
 [research]: https://gist.github.com/ix64/bcd72c151f21e1b050c9cc52d6ff27d5
 [unlock-music]: https://github.com/unlock-music/unlock-music
+[latest_release]: https://github.com/jixunmoe/qmc2/releases/latest
