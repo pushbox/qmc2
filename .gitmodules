@@ -1,0 +1,3 @@
+[submodule "QMC2-crypto/vendor/TarsCpp"]
+	path = QMC2-crypto/vendor/TarsCpp
+	url = https://github.com/TarsCloud/TarsCpp.git
